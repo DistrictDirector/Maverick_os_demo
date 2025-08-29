@@ -10,15 +10,12 @@ use pelican_ui::hardware::{ImageOrientation, Camera};
 use image::RgbaImage;
 
 use pelican_ui_std::{
-    Interface, Stack, 
-    Page, Text, TextStyle,
-    Offset, Content, Icon,
-    ExpandableText, Header,
-    AppPage, ExpandableImage,
+    Interface, Stack, Page, Text, TextStyle,
+    Offset, Content, Icon, ExpandableText, 
+    Header, AppPage, ExpandableImage,
     Size, Padding,
 };
 
-// Custom events for camera control
 #[derive(Debug, Clone)]
 pub enum CameraControlEvent {
     StartProcessed,
@@ -32,40 +29,30 @@ impl Event for CameraControlEvent {
     }
 }
 
-// Define the main application struct. This is our entry point type.
 pub struct MyApp;
 
-// Implement the Services trait for MyApp
 impl Services for MyApp {
-    // Provide a list of services used by the app. Here, it's empty.
     fn services() -> ServiceList {
         ServiceList(BTreeMap::new())
     }
 }
 
-// Implement the Plugins trait for MyApp
 impl Plugins for MyApp {
-    // Provide a list of plugins used by the app. Currently, there are none.
-    fn plugins(_ctx: &mut Context) -> Vec<Box<dyn Plugin>> { vec![] }
+    fn plugins(_ctx: &mut Context) -> Vec<Box<dyn Plugin>> { 
+        vec![] 
+    }
 }
 
-// Implement the Application trait for MyApp
 impl Application for MyApp {
-    // Asynchronously create the main drawable UI component
     async fn new(ctx: &mut Context) -> Box<dyn Drawable> {
-        // Create the first screen
         let home = FirstScreen::new(ctx);
-        // Create the main interface with the first screen as the starting page
         let interface = Interface::new(ctx, Box::new(home), None, None);
-        // Return the interface wrapped in a Box
         Box::new(interface)
     }
 }
 
-// Macro to start the application
 start!(MyApp);
 
-// Camera feed component
 #[derive(Debug, Component)]
 pub struct CameraFeed(Stack, ExpandableImage, #[skip] Option<Camera>, #[skip] bool, #[skip] bool);
 
@@ -78,12 +65,6 @@ impl CameraFeed {
         let camera = Camera::new_unprocessed().ok();
         let has_camera = camera.is_some();
         
-        if has_camera {
-            println!("Camera started successfully on initialization");
-        } else {
-            println!("Camera not available on initialization - will try manual start");
-        }
-        
         CameraFeed(
             Stack(Offset::Center, Offset::Center, Size::Static(320.0), Size::Static(240.0), Padding::default()),
             ExpandableImage::new(blank, Some((320.0, 240.0))),
@@ -93,6 +74,7 @@ impl CameraFeed {
         )
     }
 
+    // Start the camera with option for unprocessed feed
     pub fn start_camera(&mut self, ctx: &mut Context, unprocessed: bool) {
         self.3 = unprocessed;
         self.2 = if unprocessed {
@@ -100,20 +82,12 @@ impl CameraFeed {
         } else {
             Camera::new().ok()
         };
-        
         self.4 = self.2.is_some();
-        
-        if self.4 {
-            println!("Camera started successfully (unprocessed: {})", unprocessed);
-        } else {
-            println!("Failed to start camera");
-        }
     }
 
     pub fn stop_camera(&mut self) {
         self.2 = None;
         self.4 = false;
-        println!("Camera stopped");
     }
 
     pub fn is_active(&self) -> bool {
@@ -121,6 +95,7 @@ impl CameraFeed {
     }
 }
 
+// Handle events for CameraFeed
 impl OnEvent for CameraFeed {
     fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
         if let Some(TickEvent) = event.downcast_ref::<TickEvent>() {
@@ -133,15 +108,12 @@ impl OnEvent for CameraFeed {
         } else if let Some(control_event) = event.downcast_ref::<CameraControlEvent>() {
             match control_event {
                 CameraControlEvent::StartProcessed => {
-                    println!("Received StartProcessed event");
                     self.start_camera(ctx, false);
                 },
                 CameraControlEvent::StartUnprocessed => {
-                    println!("Received StartUnprocessed event");
                     self.start_camera(ctx, true);
                 },
                 CameraControlEvent::Stop => {
-                    println!("Received Stop event");
                     self.stop_camera();
                 },
             }
@@ -150,24 +122,18 @@ impl OnEvent for CameraFeed {
     }
 }
 
-// Define the first screen of the app
 #[derive(Debug, Component)]
 pub struct FirstScreen(Stack, Page);
 
-// Implement event handling for FirstScreen
 impl OnEvent for FirstScreen {
     fn on_event(&mut self, ctx: &mut Context, event: &mut dyn Event) -> bool {
-        // Handle events here if needed
         true
     }
 }
 
-// Implement the AppPage trait for navigation and UI behavior
 impl AppPage for FirstScreen {
-    // This screen does not have a navigation bar
     fn has_nav(&self) -> bool { false }
 
-    // Handle page navigation. Always returns Err(self) because this page cannot navigate.
     fn navigate(self: Box<Self>, _ctx: &mut Context, _index: usize) -> Result<Box<dyn AppPage>, Box<dyn AppPage>> {
         Err(self)
     }
@@ -196,45 +162,45 @@ impl FirstScreen {
             None,
         );
 
-        let notif_text = Text::new(ctx, "Send a test notification", TextStyle::Primary, font_size.md, Align::Center);
-        let send_notification = Button::primary(ctx, "Send Notification", move |ctx: &mut Context| {
+
+        // Notification Button
+
+        let send_notification = Button::primary(ctx, "Send Notification", |ctx: &mut Context| {
             ctx.hardware.push_notification("Reminder", "Don't forget your meeting at 3 PM today.");
         });
 
-        let haptic_text = Text::new(ctx, "Trigger haptic feedback", TextStyle::Primary, font_size.md, Align::Center);
-        
-        let haptic_feedback= Button::primary(ctx, "Haptic feed back", move |ctx: &mut Context| {
+
+        // Haptic Feedback Button
+
+        let haptic_feedback = Button::primary(ctx, "Haptic Feedback", |ctx: &mut Context| {
             ctx.hardware.haptic();
         });
 
-        let safe_text = Text::new(ctx, "Get device safe area insets", TextStyle::Primary, font_size.md, Align::Center);
-        let get_safe_area_insets = Button::primary(ctx, "Get Safe Area Insets", move |ctx: &mut Context| {
+
+        // Safe Area Insets Button
+
+        let get_safe_area_insets = Button::primary(ctx, "Get Safe Area Insets", |ctx: &mut Context| {
             let (top, right, bottom, left) = ctx.hardware.safe_area_insets();
-            println!(
-                "Safe Area Insets: top: {}, bottom: {}, left: {}, right: {}",
-                top, bottom, left, right
-            );
+            println!("Safe Area Insets: top: {}, bottom: {}, left: {}, right: {}", top, bottom, left, right);
         });
 
-        let cam_text = Text::new(ctx, "Open system camera", TextStyle::Primary, font_size.md, Align::Center);
-        
-        let open_camera = Button::primary(ctx, "Open Camera", move |ctx: &mut Context| {
+
+        // Camera Buttons
+
+        let open_camera = Button::primary(ctx, "Open Camera", |ctx: &mut Context| {
             match ctx.hardware.open_camera() {
                 Ok(_) => println!("Camera opened successfully"),
                 Err(e) => println!("Failed to open camera: {:?}", e),
             }
         });
 
-        let rawcam_text = Text::new(ctx, "Open raw/unprocessed camera", TextStyle::Primary, font_size.md, Align::Center);
-        let unprocessed_camera = Button::primary(ctx, "Unprocessed Camera", move |ctx: &mut Context| {
+        let unprocessed_camera = Button::primary(ctx, "Unprocessed Camera", |ctx: &mut Context| {
             match ctx.hardware.open_unprocessed_camera() {
-                Ok(_) => println!("Unprocessed camera opened successfully"),
+                Ok(_) => println!("Unprocessed camera opened"),
                 Err(e) => println!("Failed to open unprocessed camera: {:?}", e),
             }
         });
 
-        let camera_control_text = Text::new(ctx, "Camera Feed Controls", TextStyle::Heading, font_size.h4, Align::Center);
-        
         let camera_feed = CameraFeed::new(ctx);
         
         let status_text = if camera_feed.is_active() {
@@ -244,23 +210,21 @@ impl FirstScreen {
         };
         
         let start_processed_camera = Button::primary(ctx, "Start Processed Camera", |ctx: &mut Context| {
-            println!("Triggering StartProcessed event");
             ctx.trigger_event(CameraControlEvent::StartProcessed);
         });
 
         let start_unprocessed_camera = Button::primary(ctx, "Start Unprocessed Camera", |ctx: &mut Context| {
-            println!("Triggering StartUnprocessed event");
             ctx.trigger_event(CameraControlEvent::StartUnprocessed);
         });
 
         let stop_camera = Button::primary(ctx, "Stop Camera", |ctx: &mut Context| {
-            println!("Triggering Stop event");
             ctx.trigger_event(CameraControlEvent::Stop);
         });
-    
-        let picker_text = Text::new(ctx, "Pick a photo from library", TextStyle::Primary, font_size.md, Align::Center);
 
-        let open_photo_picker = Button::primary(ctx, "Open Photo Picker", move |ctx: &mut Context| {
+
+        // Photo Picker Button
+
+        let open_photo_picker = Button::primary(ctx, "Open Photo Picker", |ctx: &mut Context| {
             let (tx, rx) = channel::<(Vec<u8>, ImageOrientation)>();
             ctx.hardware.open_photo_picker(tx);
             
@@ -272,16 +236,17 @@ impl FirstScreen {
             });
         });
 
-        let save_text = Text::new(ctx, "Save value to cloud", TextStyle::Primary, font_size.md, Align::Center);
-        let cloud_save = Button::primary(ctx, "Cloud Save", move |ctx: &mut Context| {
+
+        // Cloud Storage Buttons
+
+        let cloud_save = Button::primary(ctx, "Cloud Save", |ctx: &mut Context| {
             match ctx.hardware.cloud_save("username", "frankie") {
                 Ok(_) => println!("Successfully saved to cloud"),
                 Err(e) => println!("Failed to save to cloud: {}", e),
             }
         });
 
-        let get_text = Text::new(ctx, "Get value from cloud", TextStyle::Primary, font_size.md, Align::Center);
-        let get_cloud_save = Button::primary(ctx, "Get Cloud Save", move |ctx: &mut Context| {
+        let get_cloud_save = Button::primary(ctx, "Get Cloud Save", |ctx: &mut Context| {
             if let Some(value) = ctx.hardware.cloud_get("username") {
                 println!("Cloud Save Value: {}", value);
             } else {
@@ -289,16 +254,14 @@ impl FirstScreen {
             }
         });
 
-        let remove_text = Text::new(ctx, "Remove value from cloud", TextStyle::Primary, font_size.md, Align::Center);
-        let cloud_remove = Button::primary(ctx, "Cloud Remove", move |ctx: &mut Context| {
+        let cloud_remove = Button::primary(ctx, "Cloud Remove", |ctx: &mut Context| {
             match ctx.hardware.cloud_remove("username") {
                 Ok(_) => println!("Successfully removed from cloud"),
                 Err(e) => println!("Failed to remove from cloud: {}", e),
             }
         });
 
-        let clear_text = Text::new(ctx, "Clear all cloud values", TextStyle::Primary, font_size.md, Align::Center);
-        let cloud_remove_all = Button::primary(ctx, "Cloud Remove All", move |ctx: &mut Context| {
+        let cloud_remove_all = Button::primary(ctx, "Cloud Remove All", |ctx: &mut Context| {
             match ctx.hardware.cloud_clear() {
                 Ok(_) => println!("Successfully cleared all cloud data"),
                 Err(e) => println!("Failed to clear cloud data: {:?}", e),
@@ -311,43 +274,20 @@ impl FirstScreen {
             vec![
                 Box::new(title),
                 Box::new(subtitle),
-
-                Box::new(notif_text),
                 Box::new(send_notification),
-
-                Box::new(haptic_text),
                 Box::new(haptic_feedback),
-
-                Box::new(safe_text),
                 Box::new(get_safe_area_insets),
-
-               // Box::new(cam_text),
-               // Box::new(open_camera),
-
-                //ox::new(rawcam_text),
-                //Box::new(unprocessed_camera),
-
-                // Camera feed section
-                Box::new(camera_control_text),
+                Box::new(open_camera),
+                Box::new(unprocessed_camera),
                 Box::new(status_text),
                 Box::new(camera_feed),
                 Box::new(start_processed_camera),
                 Box::new(start_unprocessed_camera),
                 Box::new(stop_camera),
-
-                Box::new(picker_text),
                 Box::new(open_photo_picker),
-
-                Box::new(save_text),
                 Box::new(cloud_save),
-
-                Box::new(get_text),
                 Box::new(get_cloud_save),
-
-                Box::new(remove_text),
                 Box::new(cloud_remove),
-
-                Box::new(clear_text),
                 Box::new(cloud_remove_all),
             ],
         );
