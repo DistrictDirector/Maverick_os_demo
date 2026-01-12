@@ -9,8 +9,13 @@ authors = ["Caleb Couch <caleb@orange.me>", "Ella Couch <ella@orange.me>"]
 
 [dependencies]
 image = "0.25.6"
-pelican_ui = "1.1.7"
-pelican_ui_std = "0.2.8"
+#pelican_ui = { path = "../pelican_ui" }
+ramp = { path = "../ramp", package = "ramp2" }
+prism = { path = "../prism", package = "prism2" }
+stork = { path = "../stork"}
+rodio = "0.21.1"
+rand = "0.9.2"
+
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.43.0", features = ["rt-multi-thread", "sync", "time", "net"] }
@@ -21,7 +26,7 @@ crate-type=["staticlib", "cdylib", "rlib"]
 
 [package.metadata.android]
 package = "com.orange.pkg"
-build_targets = [ "aarch64-linux-android" ]
+build_targets = [ "aarch64-linux-android", "armv7-linux-androideabi" ]
 
 [[package.metadata.android.uses_permission]]
 name = "android.permission.INTERNET"
